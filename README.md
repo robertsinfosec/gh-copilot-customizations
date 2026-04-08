@@ -64,7 +64,7 @@ generation-source: "generation/instructions/security-standards.md"
 
 4. **Changelog**: Run `/update-changelog` in Copilot chat. It gathers git history since the last release, categorizes changes per [keepachangelog](https://keepachangelog.com/en/1.1.0/), and updates `CHANGELOG.md`. The release workflow will **block** if the `[Unreleased]` section is empty.
 
-5. **Release**: Push to `staging` or `main` and trigger the release workflow (Actions → Release → Run workflow). After release, the workflow automatically archives `[Unreleased]` content under the version heading and commits an empty `[Unreleased]` section — so the next release is blocked until someone runs `/update-changelog` again.
+5. **Release**: Push to `staging` or `main` and trigger the release workflow (Actions → Release → Run workflow). The `[Unreleased]` section is used as the release description. After a production release, the workflow automatically archives `[Unreleased]` under the version heading and pushes the archived changelog to `staging` — so it's ready for the next cycle.
 
 ### Build Step
 

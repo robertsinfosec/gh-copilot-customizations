@@ -102,13 +102,13 @@ jobs:
             agent-control-files-${{ steps.version.outputs.version }}.tar.gz
             agent-control-files-${{ steps.version.outputs.version }}.zip
 
-      - name: Archive changelog and clear [Unreleased]
+      - name: Archive changelog to staging
         if: steps.version.outputs.prerelease == 'false'
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           DATE=$(date -u +%Y-%m-%d)
 
-          # Replace [Unreleased] content with empty section + archived version heading
+          # Archive [Unreleased] content under the version heading
           awk -v ver="$VERSION" -v date="$DATE" '
             /^## \[Unreleased\]/ {
               print $0
@@ -119,13 +119,16 @@ jobs:
             }
             found && /^## \[/ { found=0 }
             !found { print }
-          ' CHANGELOG.md > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
+          ' CHANGELOG.md > /tmp/CHANGELOG-archived.md
 
-      - name: Commit archived changelog
-        if: steps.version.outputs.prerelease == 'false'
-        run: |
+          # Switch to staging and apply the archived changelog
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin staging
+          git checkout staging
+          cp /tmp/CHANGELOG-archived.md CHANGELOG.md
           git add CHANGELOG.md
-          git commit -m "chore: archive changelog for ${{ steps.version.outputs.version }}"
-          git push
+          git commit -m "chore: archive changelog for ${VERSION}"
+          git push origin staging
+
+
