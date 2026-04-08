@@ -1,10 +1,10 @@
-# Copilot Agent Control Files
+# GitHub Copilot Customizations
 
-> **Version: {{VERSION}}** · [robertsinfosec/agent-control-files](https://github.com/robertsinfosec/agent-control-files)
+> **Version: {{VERSION}}** · [robertsinfosec/gh-copilot-customizations](https://github.com/robertsinfosec/gh-copilot-customizations)
 
 ## Quick Start
 
-1. Download and extract a [release](https://github.com/robertsinfosec/agent-control-files/releases) into your repo root (the `.github/` folder merges with your existing one)
+1. Download and extract a [release](https://github.com/robertsinfosec/gh-copilot-customizations/releases) into your repo root (the `.github/` folder merges with your existing one)
 2. Run `/detect-stack` in Copilot chat to generate technology-specific standards
 3. Start coding — all governance is now active
 

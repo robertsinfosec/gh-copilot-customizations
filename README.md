@@ -1,6 +1,6 @@
-# Agent Control Files
+# GitHub Copilot Customizations
 
-A centralized governance factory for GitHub Copilot agent control files. SMEs author generation files (human-language intent), an LLM produces Copilot-native control files, and a build step packages clean releases for consumers.
+A centralized governance factory for GitHub Copilot customization files. SMEs author generation files (human-language intent), an LLM produces Copilot-native customization files, and a build step packages clean releases for consumers.
 
 Covers security (OWASP ASVS v5, NIST 800-53), compliance (PCI-DSS, GDPR, HIPAA, SOX), code quality (zero technical debt), accessibility (WCAG 2.2 AA), and brand consistency.
 
@@ -151,10 +151,10 @@ Consumers download a release and extract the `.github/` folder into their repo r
 
 ```bash
 # Download and extract the latest release
-tar -xzf agent-control-files-v26.408.1430.tar.gz
+tar -xzf gh-copilot-customizations-v26.408.1430.tar.gz
 
 # Or unzip
-unzip agent-control-files-v26.408.1430.zip
+unzip gh-copilot-customizations-v26.408.1430.zip
 ```
 
 Then run `/detect-stack` in Copilot chat to generate technology-specific standards. See the [consumer README](src/.github/README.md) for full details.

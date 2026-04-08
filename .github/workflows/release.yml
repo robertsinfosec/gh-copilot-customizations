@@ -105,8 +105,8 @@ jobs:
       - name: Package release artifact
         run: |
           cd dist
-          tar -czf "../agent-control-files-${{ steps.version.outputs.version }}.tar.gz" .github/
-          zip -r "../agent-control-files-${{ steps.version.outputs.version }}.zip" .github/
+          tar -czf "../gh-copilot-customizations-${{ steps.version.outputs.version }}.tar.gz" .github/
+          zip -r "../gh-copilot-customizations-${{ steps.version.outputs.version }}.zip" .github/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -116,8 +116,8 @@ jobs:
           prerelease: ${{ steps.version.outputs.prerelease }}
           body_path: release-notes.md
           files: |
-            agent-control-files-${{ steps.version.outputs.version }}.tar.gz
-            agent-control-files-${{ steps.version.outputs.version }}.zip
+            gh-copilot-customizations-${{ steps.version.outputs.version }}.tar.gz
+            gh-copilot-customizations-${{ steps.version.outputs.version }}.zip
 
       - name: Commit stamped changelog to main
         if: steps.version.outputs.prerelease == 'false'

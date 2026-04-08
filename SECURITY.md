@@ -13,7 +13,7 @@ Only the latest production release is supported with security updates.
 
 **Do not open a public issue for security vulnerabilities.**
 
-Instead, please report vulnerabilities through [GitHub Security Advisories](https://github.com/robertsinfosec/agent-control-files/security/advisories/new).
+Instead, please report vulnerabilities through [GitHub Security Advisories](https://github.com/robertsinfosec/gh-copilot-customizations/security/advisories/new).
 
 You can expect:
 
@@ -23,7 +23,7 @@ You can expect:
 
 ## Scope
 
-This repository contains Copilot agent control files — markdown configuration files that govern LLM behavior. Security concerns here typically involve:
+This repository contains Copilot customization files — markdown configuration files that govern LLM behavior. Security concerns here typically involve:
 
 - Control files that could instruct an LLM to bypass security safeguards
 - Generation prompts that could produce insecure control file content

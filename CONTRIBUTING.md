@@ -1,12 +1,12 @@
 # Contributing
 
-Thank you for your interest in contributing to Agent Control Files!
+Thank you for your interest in contributing to GitHub Copilot Customizations!
 
 ## How to Contribute
 
 ### Reporting Issues
 
-- Use [GitHub Issues](https://github.com/robertsinfosec/agent-control-files/issues) to report bugs or request features
+- Use [GitHub Issues](https://github.com/robertsinfosec/gh-copilot-customizations/issues) to report bugs or request features
 - Search existing issues before opening a new one
 - Include steps to reproduce for bugs
 
