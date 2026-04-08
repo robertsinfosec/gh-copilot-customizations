@@ -1,0 +1,138 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate control files
+        run: bash scripts/validate.sh
+
+      - name: Check CHANGELOG.md [Unreleased] section has content
+        run: |
+          # Extract everything between [Unreleased] heading and the next ## heading (or EOF)
+          UNRELEASED=$(awk '/^## \[Unreleased\]/{found=1; next} found && /^## \[/{exit} found{print}' CHANGELOG.md | grep -v '^[[:space:]]*$' || true)
+          if [[ -z "$UNRELEASED" ]]; then
+            echo "::error::CHANGELOG.md [Unreleased] section is empty. Run /update-changelog in Copilot chat to generate entries from git history, then commit the result."
+            exit 1
+          fi
+          echo "Found [Unreleased] entries:"
+          echo "$UNRELEASED"
+
+  release:
+    needs: validate
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+          YY=$(date -u +%y)
+          MDD=$(date -u +%-m%d)
+
+          if [[ "$BRANCH" == "main" ]]; then
+            # Production: v{YY}.{MDD}.{N} where N auto-increments for same-day releases
+            PREFIX="v${YY}.${MDD}"
+            LAST=$(git tag -l "${PREFIX}.*" | sed "s/${PREFIX}\.//" | sort -n | tail -1)
+            if [[ -z "$LAST" ]]; then
+              SEQ=0
+            else
+              SEQ=$((LAST + 1))
+            fi
+            VERSION="${PREFIX}.${SEQ}"
+            PRERELEASE=false
+          else
+            # Pre-release: v{YY}.{MDD}.{HHMM}-{branch}
+            HHMM=$(date -u +%-H%M)
+            SAFE_BRANCH=$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9-]/-/g')
+            VERSION="v${YY}.${MDD}.${HHMM}-${SAFE_BRANCH}"
+            PRERELEASE=true
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "prerelease=${PRERELEASE}" >> "$GITHUB_OUTPUT"
+          echo "## Version: ${VERSION}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Pre-release: ${PRERELEASE}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check tag does not already exist
+        run: |
+          if git rev-parse "refs/tags/${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "::error::Tag ${{ steps.version.outputs.version }} already exists"
+            exit 1
+          fi
+
+      - name: Extract changelog for release body
+        id: changelog
+        run: |
+          BODY=$(awk '/^## \[Unreleased\]/{found=1; next} found && /^## \[/{exit} found{print}' CHANGELOG.md)
+          # Strip blank lines for the emptiness check, but keep them in the release body
+          STRIPPED=$(echo "$BODY" | grep -v '^[[:space:]]*$' || true)
+          if [[ -z "$STRIPPED" ]]; then
+            echo "::error::[Unreleased] section is empty — nothing to release."
+            exit 1
+          fi
+          echo "$BODY" > release-notes.md
+
+      - name: Build
+        run: bash scripts/build.sh "${{ steps.version.outputs.version }}"
+
+      - name: Package release artifact
+        run: |
+          cd dist
+          tar -czf "../agent-control-files-${{ steps.version.outputs.version }}.tar.gz" .github/
+          zip -r "../agent-control-files-${{ steps.version.outputs.version }}.zip" .github/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: ${{ steps.version.outputs.version }}
+          prerelease: ${{ steps.version.outputs.prerelease }}
+          body_path: release-notes.md
+          files: |
+            agent-control-files-${{ steps.version.outputs.version }}.tar.gz
+            agent-control-files-${{ steps.version.outputs.version }}.zip
+
+      - name: Archive changelog and clear [Unreleased]
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          DATE=$(date -u +%Y-%m-%d)
+
+          # Replace [Unreleased] content with empty section + archived version heading
+          awk -v ver="$VERSION" -v date="$DATE" '
+            /^## \[Unreleased\]/ {
+              print $0
+              print ""
+              printf "## [%s] - %s\n", ver, date
+              found=1
+              next
+            }
+            found && /^## \[/ { found=0 }
+            !found { print }
+          ' CHANGELOG.md > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
+
+      - name: Commit archived changelog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "chore: archive changelog for ${{ steps.version.outputs.version }}"
+          git push
