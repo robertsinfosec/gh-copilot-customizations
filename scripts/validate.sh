@@ -19,8 +19,9 @@ echo ""
 while IFS= read -r file; do
   rel="${file#$REPO_ROOT/}"
 
-  # Skip the consumer README
+  # Skip the consumer README and customizations index
   [[ "$file" == "$PRODUCT_DIR/README.md" ]] && continue
+  [[ "$file" == "$PRODUCT_DIR/COPILOT_CUSTOMIZATIONS.md" ]] && continue
 
   echo "  $rel"
 
@@ -106,7 +107,7 @@ done < <(find "$FACTORY_DIR" -name '*.md' -type f | sort)
 echo ""
 
 # --- File count sanity ---
-control_count=$(find "$PRODUCT_DIR" -name '*.md' -not -name 'README.md' -type f | wc -l)
+control_count=$(find "$PRODUCT_DIR" -name '*.md' -not -name 'README.md' -not -name 'COPILOT_CUSTOMIZATIONS.md' -type f | wc -l)
 generation_count=$(find "$FACTORY_DIR" -name '*.md' -type f | wc -l)
 echo "=== File counts ==="
 echo "  Control files:    $control_count"
