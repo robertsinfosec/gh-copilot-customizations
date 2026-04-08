@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [v26.408.509] - 2026-04-08
+
 ### Changed
 
 - Simplified release workflow versioning to use HHMM timestamp for both production and pre-release tags (replaced auto-incrementing sequence number for production)
