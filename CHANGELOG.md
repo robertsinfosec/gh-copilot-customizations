@@ -9,8 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Simplified release workflow versioning to use HHMM timestamp for both production and pre-release tags (replaced auto-incrementing sequence number for production)
-- Fixed changelog archive script to preserve content under version heading
-- Release workflow now archives changelog to `staging` branch instead of committing to `main`
+- Changelog now follows a state machine: production releases stamp `[Unreleased]` with the version number and push the result to both `main` and `staging`; `/update-changelog` creates the `[Unreleased]` section for the next cycle
+- `/update-changelog` prompt rewritten to understand the state machine lifecycle
 
 ### Added
 

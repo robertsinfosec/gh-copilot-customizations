@@ -35,6 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
@@ -73,14 +74,30 @@ jobs:
       - name: Extract changelog for release body
         id: changelog
         run: |
+          # Grab [Unreleased] content BEFORE stamping the version
           BODY=$(awk '/^## \[Unreleased\]/{found=1; next} found && /^## \[/{exit} found{print}' CHANGELOG.md)
-          # Strip blank lines for the emptiness check, but keep them in the release body
           STRIPPED=$(echo "$BODY" | grep -v '^[[:space:]]*$' || true)
           if [[ -z "$STRIPPED" ]]; then
             echo "::error::[Unreleased] section is empty — nothing to release."
             exit 1
           fi
           echo "$BODY" > release-notes.md
+
+      - name: Stamp changelog with version
+        if: steps.version.outputs.prerelease == 'false'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          DATE=$(date -u +%Y-%m-%d)
+
+          # Replace "## [Unreleased]" with "## [version] - date"
+          # Content beneath it stays in place. No [Unreleased] section remains.
+          awk -v ver="$VERSION" -v date="$DATE" '
+            /^## \[Unreleased\]/ {
+              printf "## [%s] - %s\n", ver, date
+              next
+            }
+            { print }
+          ' CHANGELOG.md > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
 
       - name: Build
         run: bash scripts/build.sh "${{ steps.version.outputs.version }}"
@@ -102,32 +119,36 @@ jobs:
             agent-control-files-${{ steps.version.outputs.version }}.tar.gz
             agent-control-files-${{ steps.version.outputs.version }}.zip
 
-      - name: Archive changelog to staging
+      - name: Commit stamped changelog to main
         if: steps.version.outputs.prerelease == 'false'
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          DATE=$(date -u +%Y-%m-%d)
-
-          # Archive [Unreleased] content under the version heading
-          # Result: empty [Unreleased], then version heading with the old content under it
-          awk -v ver="$VERSION" -v date="$DATE" '
-            /^## \[Unreleased\]/ {
-              print $0
-              print ""
-              printf "## [%s] - %s\n", ver, date
-              next
-            }
-            { print }
-          ' CHANGELOG.md > /tmp/CHANGELOG-archived.md
-
-          # Switch to staging and apply the archived changelog
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git fetch origin staging
-          git checkout staging
-          cp /tmp/CHANGELOG-archived.md CHANGELOG.md
           git add CHANGELOG.md
-          git commit -m "chore: archive changelog for ${VERSION}"
-          git push origin staging
+          git commit -m "chore: stamp changelog for ${VERSION} [skip ci]"
+          git push origin main
 
+      - name: Open PR to sync source branch
+        if: steps.version.outputs.prerelease == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
 
+          # Find which branch's PR triggered this push
+          SOURCE_BRANCH=$(gh api "/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" \
+            --jq '.[0].head.ref // empty' 2>/dev/null || true)
+
+          if [[ -z "$SOURCE_BRANCH" ]]; then
+            echo "No source PR found (direct push) — skipping sync PR."
+            exit 0
+          fi
+
+          echo "Opening sync PR: main → ${SOURCE_BRANCH}"
+          gh pr create \
+            --base "$SOURCE_BRANCH" \
+            --head main \
+            --title "chore: sync ${SOURCE_BRANCH} after ${VERSION}" \
+            --body "Automated PR to bring the stamped changelog and release changes back to \`${SOURCE_BRANCH}\`." \
+          || echo "PR already exists or branches are in sync."

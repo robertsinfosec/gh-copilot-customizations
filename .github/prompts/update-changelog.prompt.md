@@ -10,10 +10,14 @@ You are updating `CHANGELOG.md` in a repository that follows [Keep a Changelog v
 
 ## How this repo handles changelogs
 
-- The `[Unreleased]` section accumulates entries across all pre-releases.
-- Pre-releases use `[Unreleased]` as their release description but do NOT consume or clear it.
-- Only production releases (from `main`) archive `[Unreleased]` under a version heading — and that is done automatically by the release workflow, not by this prompt.
-- Your job is to keep `[Unreleased]` accurate and up to date.
+The changelog follows a state machine:
+
+1. **After a production release**, `CHANGELOG.md` has NO `[Unreleased]` section — only versioned sections like `## [v26.408.505] - 2026-04-08`. This is the signal that the developer needs to run this prompt.
+2. **This prompt** creates the `[Unreleased]` section and populates it with entries from git history since the last release tag.
+3. **During development**, the developer runs this prompt again to add new entries as commits accumulate.
+4. **When a PR merges to `main`**, the release workflow automatically stamps `[Unreleased]` with the version number, commits to `main`, and opens a sync PR back to the source branch. The cycle resets to step 1.
+
+**Your job**: Create or update the `[Unreleased]` section. Never stamp versions — the workflow does that.
 
 ## Step 1: Gather context
 
@@ -45,6 +49,9 @@ fi
 
 Read `CHANGELOG.md` and understand the existing structure and entries.
 
+- If there is **no `[Unreleased]` section**: this is normal after a production release. You will create one.
+- If there **is** an `[Unreleased]` section: you will update it with new entries.
+
 ## Step 3: Categorize changes
 
 Group commits into Keep a Changelog categories:
@@ -59,14 +66,15 @@ Group commits into Keep a Changelog categories:
 Rules:
 - ⛔ NEVER include a category with no entries
 - ⛔ NEVER fabricate changes that don't appear in the git history
-- ⛔ NEVER archive or clear the `[Unreleased]` section — the release workflow handles that
+- ⛔ NEVER stamp a version number on `[Unreleased]` — the release workflow does that
+- ⛔ NEVER remove or modify existing versioned sections (e.g., `## [v26.408.505] - ...`)
 - ✅ Write entries from the consumer's perspective (what changed for them), not implementation details
 - ✅ Reference specific file names when a control file was added, changed, or removed
 - ✅ Collapse related commits into a single entry (e.g., 5 commits fixing the same instruction → one "Changed" entry)
 - ✅ Preserve existing `[Unreleased]` entries that are still accurate — only add, update, or remove entries as needed
 
-## Step 4: Update the `[Unreleased]` section
+## Step 4: Write the `[Unreleased]` section
 
-Replace or update the contents of the `[Unreleased]` section in `CHANGELOG.md` with the categorized entries. Preserve all previous release sections below it.
+**If no `[Unreleased]` section exists**: Insert `## [Unreleased]` on a new line immediately after the header block (the "format is based on" line), followed by a blank line, then your categorized entries. Preserve all versioned sections below.
 
-If there is no `[Unreleased]` section, add one immediately after the header block.
+**If `[Unreleased]` already exists**: Update its contents with the categorized entries. Preserve all versioned sections below it.

@@ -62,9 +62,9 @@ generation-source: "generation/instructions/security-standards.md"
 
 3. **Review**: Replace the control file body with the generated output. Iterate until satisfied.
 
-4. **Changelog**: Run `/update-changelog` in Copilot chat. It gathers git history since the last release, categorizes changes per [keepachangelog](https://keepachangelog.com/en/1.1.0/), and updates `CHANGELOG.md`. The release workflow will **block** if the `[Unreleased]` section is empty.
+4. **Changelog**: Run `/update-changelog` in Copilot chat. It gathers git history since the last release, categorizes changes per [keepachangelog](https://keepachangelog.com/en/1.1.0/), and creates or updates `CHANGELOG.md`. After a production release, `[Unreleased]` won't exist — the prompt knows to create it. The release workflow will **block** if the `[Unreleased]` section is missing or empty.
 
-5. **Release**: Push to `staging` or `main` and trigger the release workflow (Actions → Release → Run workflow). The `[Unreleased]` section is used as the release description. After a production release, the workflow automatically archives `[Unreleased]` under the version heading and pushes the archived changelog to `staging` — so it's ready for the next cycle.
+5. **Release**: Open a PR to `main`. Validation checks that `[Unreleased]` has content. When merged, the release workflow stamps `[Unreleased]` with the version number, creates a GitHub Release, commits the stamped changelog to `main`, and opens a sync PR back to the source branch. The cycle resets — `[Unreleased]` is gone, forcing `/update-changelog` to be run before the next release.
 
 ### Build Step
 
@@ -117,11 +117,14 @@ The workflow has two jobs:
 1. Auto-detects branch → sets pre-release flag for non-`main`
 2. Generates a date-stamp version
 3. Extracts the `[Unreleased]` section from `CHANGELOG.md` for the release body
-4. Runs the build script with version injection
-5. Packages `tar.gz` + `zip` artifacts
-6. Creates a GitHub Release with changelog as the description
+4. Stamps `[Unreleased]` → `[version]` (production only)
+5. Runs the build script with version injection
+6. Packages `tar.gz` + `zip` artifacts
+7. Creates a GitHub Release with changelog as the description
+8. Commits stamped changelog to `main` with `[skip ci]`
+9. Opens a sync PR back to the source branch via `gh`
 
-**Typical flow**: work on `staging` → manual dispatch creates pre-releases → open PR to `main` (validation runs as a check) → merge → production release is created automatically.
+**Typical flow**: work on a branch → open PR to `main` (validation runs as a check) → merge → production release is created automatically → accept the sync PR to bring the stamped changelog back.
 
 ## What's Included
 
