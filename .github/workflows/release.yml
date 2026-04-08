@@ -109,16 +109,15 @@ jobs:
           DATE=$(date -u +%Y-%m-%d)
 
           # Archive [Unreleased] content under the version heading
+          # Result: empty [Unreleased], then version heading with the old content under it
           awk -v ver="$VERSION" -v date="$DATE" '
             /^## \[Unreleased\]/ {
               print $0
               print ""
               printf "## [%s] - %s\n", ver, date
-              found=1
               next
             }
-            found && /^## \[/ { found=0 }
-            !found { print }
+            { print }
           ' CHANGELOG.md > /tmp/CHANGELOG-archived.md
 
           # Switch to staging and apply the archived changelog
